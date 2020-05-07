@@ -16,6 +16,7 @@ _STUB_INDEX="${PROGRAM}_STUB_INDEX"
 _STUB_RESULT="${PROGRAM}_STUB_RESULT"
 _STUB_END="${PROGRAM}_STUB_END"
 _STUB_DEBUG="${PROGRAM}_STUB_DEBUG"
+_STUB_EXIT=
 
 debug() {
   if [ -n "${!_STUB_DEBUG}" ] ; then
@@ -99,6 +100,10 @@ while IFS= read -r line; do
       set +e
       ( eval "$command"  <<< "$input" )
       status="$?"
+      if [[ ${command} = *"exit"* ]] ; then
+        debug "stub included custom exit status"
+	_STUB_EXIT=$status
+      fi
       debug "command result was $status"
       set -e
     else
@@ -140,7 +145,12 @@ else
   { echo "${_STUB_INDEX}=$((${!_STUB_INDEX} + 1))"
     echo "${_STUB_RESULT}=${!_STUB_RESULT}"
   } > "${!_STUB_RUN}"
-
-  debug "result ${!_STUB_RESULT}"
-  exit "${!_STUB_RESULT}"
+  if [ ! -z $_STUB_EXIT ] ; then
+    debug "result ${!_STUB_RESULT}"
+    debug "exiting with stub status ${_STUB_EXIT}"
+    exit "${_STUB_EXIT}"
+  else
+    debug "result ${!_STUB_RESULT}"
+    exit "${!_STUB_RESULT}"
+  fi
 fi
